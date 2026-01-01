@@ -93,7 +93,7 @@ li{margin:4px 0}
   <button onclick="start()">Continue</button>
 </div>
 
-<!-- 🔥 Firebase SDKs (COMPAT – correct for this app) -->
+<!-- 🔥 Firebase SDKs (COMPAT) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
@@ -102,17 +102,24 @@ li{margin:4px 0}
 
 <script>
 /* 🔑 FIREBASE INITIALIZATION */
-firebase.initializeApp({
-  apiKey: "AIzaSyBKLfMUMRyoP9s6PPLRntW8IF2_nW9x6tY",
-  authDomain: "happy-847d1.firebaseapp.com",
-  databaseURL:"https:console.firebase.google.com/u/0/project/happy-847d1/database/happy-847d1-default-rtdb/data/~2F",
-  projectId: "happy-847d1",
-  storageBucket: "happy-847d1.appspot.com",
-  messagingSenderId: "766685433414",
-  appId: "1:766685433414:web:835865669f8e2984344447"
-});
+let db;
+try {
+  firebase.initializeApp({
+    apiKey: "AIzaSyBKLfMUMRyoP9s6PPLRntW8IF2_nW9x6tY",
+    authDomain: "happy-847d1.firebaseapp.com",
+    databaseURL: "https://happy-847d1-default-rtdb.firebaseio.com",
+    projectId: "happy-847d1",
+    storageBucket: "happy-847d1.appspot.com",
+    messagingSenderId: "766685433414",
+    appId: "1:766685433414:web:835865669f8e2984344447"
+  });
+  db = firebase.database();
+  console.log("✅ Firebase initialized successfully");
+} catch(e){
+  alert("❌ Firebase failed to initialize. Please check your configuration.");
+  console.error("Firebase error:", e);
+}
 
-const db = firebase.database();
 const music = document.getElementById("bgMusic");
 let currentUser = "";
 
@@ -126,6 +133,8 @@ function safe(t){
 
 /* START */
 function start(){
+  if(!db){ alert("Firebase is not connected. Cannot continue."); return; }
+
   const name=document.getElementById("username").value.trim();
   if(!name) return alert("Enter name");
   currentUser=safe(name);
@@ -160,6 +169,8 @@ function start(){
 
 /* SEND MESSAGE */
 function send(){
+  if(!db){ alert("Firebase is not connected. Cannot send message."); return; }
+
   const m=document.getElementById("feedback").value.trim();
   if(!m) return;
   db.ref("guests").push({
@@ -172,15 +183,17 @@ function send(){
 }
 
 /* READ MESSAGES */
-db.ref("guests").on("value", s=>{
-  const ul=document.getElementById("msgs");
-  if(!ul) return;
-  ul.innerHTML="";
-  s.forEach(c=>{
-    const d=c.val();
-    ul.innerHTML+=`<li><b>${d.name}</b>: ${d.msg}</li>`;
+if(db){
+  db.ref("guests").on("value", s=>{
+    const ul=document.getElementById("msgs");
+    if(!ul) return;
+    ul.innerHTML="";
+    s.forEach(c=>{
+      const d=c.val();
+      ul.innerHTML+=`<li><b>${d.name}</b>: ${d.msg}</li>`;
+    });
   });
-});
+}
 
 /* MUSIC */
 function toggleMusic(){
@@ -200,4 +213,4 @@ function countdown(){
 </script>
 
 </body>
-</html>l>
+</html>
