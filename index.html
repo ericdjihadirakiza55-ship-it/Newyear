@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Happy New Year 2026</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link rel="manifest" href="data:application/json,{
+  &quot;name&quot;:&quot;Happy New Year 2026&quot;,
+  &quot;short_name&quot;:&quot;NY2026&quot;,
+  &quot;start_url&quot;:&quot;.&quot;,
+  &quot;display&quot;:&quot;standalone&quot;,
+  &quot;background_color&quot;:&quot;#000000&quot;,
+  &quot;theme_color&quot;:&quot;#ffd700&quot;
+}">
+
+<style>
+body{
+  margin:0; min-height:100vh;
+  background:url("background.jpg") center/cover no-repeat;
+  font-family:Arial,sans-serif;
+  display:flex; justify-content:center; align-items:center;
+  color:white; overflow:hidden;
+}
+.overlay{
+  background:rgba(0,0,0,.85);
+  padding:25px;
+  border-radius:20px;
+  width:92%; max-width:540px;
+  text-align:center;
+  box-shadow:0 0 40px gold,0 0 70px orange;
+  max-height:90vh; overflow:auto;
+  z-index:2;
+}
+input,textarea,select{
+  width:85%; padding:10px; margin:6px;
+  border-radius:12px; border:none;
+}
+button{
+  padding:10px 18px; margin:6px;
+  border-radius:16px; border:none;
+  cursor:pointer; font-weight:bold;
+  background:linear-gradient(45deg,gold,orange,yellow,#ff69b4);
+}
+button:hover{transform:scale(1.08)}
+h1{
+  font-size:28px;
+  background:linear-gradient(90deg,#ffd700,#ff4500,#ff69b4,#00ffff);
+  background-size:300%;
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  animation:shine 3s linear infinite;
+}
+@keyframes shine{to{background-position:300%}}
+.user-letter{
+  display:inline-block;
+  background:linear-gradient(270deg,red,orange,yellow,green,blue,indigo,violet);
+  background-size:1400%;
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  animation:rainbow 6s infinite;
+}
+.djihad-name{
+  font-size:30px; color:#00ffff;
+  text-shadow:0 0 15px #00ffff,0 0 30px #ff00ff;
+}
+#countdown{
+  font-size:22px; margin:10px 0;
+  color:#ffd700; text-shadow:0 0 10px gold;
+}
+ul{list-style:none;padding:0}
+li{margin:4px 0}
+#fireworks{
+  position:fixed; inset:0;
+  pointer-events:none; z-index:1;
+}
+</style>
+</head>
+
+<body>
+
+<canvas id="fireworks"></canvas>
+
+<audio id="bgMusic" loop>
+  <source src="https://upload.wikimedia.org/wikipedia/commons/e/e1/New_Year_Audio.ogg">
+</audio>
+
+<div class="overlay" id="content">
+  <h1>🎉 Welcome 🎉</h1>
+  <p>Enter your name</p>
+  <input id="username" placeholder="Your name">
+  <br>
+  <button onclick="start()">Continue</button>
+</div>
+
+<!-- 🔥 Firebase SDKs (COMPAT – correct for this app) -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<!-- QR Code -->
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+
+<script>
+/* 🔑 FIREBASE INITIALIZATION */
+firebase.initializeApp({
+  apiKey: "AIzaSyBKLfMUMRyoP9s6PPLRntW8IF2_nW9x6tY",
+  authDomain: "happy-847d1.firebaseapp.com",
+  databaseURL: https:"console.firebase.google.com/u/0/project/happy-847d1/database/happy-847d1-default-rtdb/data/~2F"",
+  projectId: "happy-847d1",
+  storageBucket: "happy-847d1.appspot.com",
+  messagingSenderId: "766685433414",
+  appId: "1:766685433414:web:835865669f8e2984344447"
+});
+
+const db = firebase.database();
+const music = document.getElementById("bgMusic");
+let currentUser = "";
+
+/* SAFE TEXT */
+function safe(t){
+  return t.replace(/[&<>"']/g,m=>({
+    '&':'&amp;','<':'&lt;','>':'&gt;',
+    '"':'&quot;',"'":'&#39;'
+  })[m]);
+}
+
+/* START */
+function start(){
+  const name=document.getElementById("username").value.trim();
+  if(!name) return alert("Enter name");
+  currentUser=safe(name);
+
+  const letters=currentUser.split("").map(l=>`<span class="user-letter">${l}</span>`).join("");
+  const link=location.origin+location.pathname+"?name="+encodeURIComponent(currentUser);
+
+  document.getElementById("content").innerHTML=`
+    <h1>🎆 HAPPY NEW YEAR 2026 🎆</h1>
+    <h2>${letters}</h2>
+    <p>From <span class="djihad-name">Djihad</span> 💖</p>
+    <div id="countdown"></div>
+
+    <button onclick="toggleMusic()">🔊 Music</button>
+
+    <h3>Leave a message</h3>
+    <textarea id="feedback" placeholder="Write your wish here..."></textarea><br>
+    <button onclick="send()">Send</button>
+
+    <h3>Share</h3>
+    <input value="${link}" readonly onclick="this.select()">
+    <div id="qr"></div>
+
+    <h3>Messages</h3>
+    <ul id="msgs"></ul>
+  `;
+
+  new QRCode(document.getElementById("qr"), link);
+  music.play().catch(()=>{});
+  countdown();
+}
+
+/* SEND MESSAGE */
+function send(){
+  const m=document.getElementById("feedback").value.trim();
+  if(!m) return;
+  db.ref("guests").push({
+    name: currentUser,
+    msg: safe(m),
+    time: Date.now()
+  });
+  document.getElementById("feedback").value="";
+  alert("Thank you 💖");
+}
+
+/* READ MESSAGES */
+db.ref("guests").on("value", s=>{
+  const ul=document.getElementById("msgs");
+  if(!ul) return;
+  ul.innerHTML="";
+  s.forEach(c=>{
+    const d=c.val();
+    ul.innerHTML+=`<li><b>${d.name}</b>: ${d.msg}</li>`;
+  });
+});
+
+/* MUSIC */
+function toggleMusic(){
+  music.paused ? music.play() : music.pause();
+}
+
+/* COUNTDOWN */
+function countdown(){
+  const el=document.getElementById("countdown");
+  const ny=new Date("Jan 1, 2026 00:00:00").getTime();
+  setInterval(()=>{
+    const d=ny-Date.now();
+    if(d<=0){el.innerHTML="🎉 HAPPY NEW YEAR 🎉";return;}
+    el.innerHTML=`⏳ ${Math.floor(d/86400000)}d ${Math.floor(d/3600000)%24}h ${Math.floor(d/60000)%60}m ${Math.floor(d/1000)%60}s`;
+  },1000);
+}
+</script>
+
+</body>
+</html>
